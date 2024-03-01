@@ -1,0 +1,159 @@
+# Copyright (C) 2019, Fortishield Inc.
+#
+# This program is a free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public
+# License (version 2) as published by the FSF - Free Software
+# Foundation.
+
+# Fortishield master StatefulSet
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fortishield-manager-master
+  namespace: fortishield
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fortishield-manager
+      node-type: master
+  serviceName: fortishield-cluster
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: fortishield-manager
+        node-type: master
+      name: fortishield-manager-master
+    spec:
+      volumes:
+        - name: config
+          configMap:
+            name: fortishield-conf
+        - name: filebeat-certs
+          secret:
+            secretName: indexer-certs
+        - name: fortishield-authd-pass
+          secret:
+            secretName: fortishield-authd-pass
+      securityContext:
+        fsGroup: 101
+      containers:
+        - name: fortishield-manager
+          image: 'fortishield/fortishield-manager:5.0.0'
+          resources:
+            limits:
+              cpu: 400m
+              memory: 512Mi
+          securityContext:
+            capabilities:
+              add: ["SYS_CHROOT"]
+          volumeMounts:
+            - name: config
+              mountPath: /fortishield-config-mount/etc/ossec.conf
+              subPath: master.conf
+              readOnly: true
+            - name: filebeat-certs
+              mountPath: /etc/ssl/root-ca.pem
+              readOnly: true
+              subPath: root-ca.pem
+            - name: filebeat-certs
+              mountPath: /etc/ssl/filebeat.pem
+              subPath: filebeat.pem
+              readOnly: true
+            - name: filebeat-certs
+              mountPath: /etc/ssl/filebeat.key
+              subPath: filebeat-key.pem
+              readOnly: true
+            - name: fortishield-authd-pass
+              mountPath: /fortishield-config-mount/etc/authd.pass
+              subPath: authd.pass
+              readOnly: true
+            - name: fortishield-manager-master
+              mountPath: /var/ossec/api/configuration
+              subPath: fortishield/var/ossec/api/configuration
+            - name: fortishield-manager-master
+              mountPath: /var/ossec/etc
+              subPath: fortishield/var/ossec/etc
+            - name: fortishield-manager-master
+              mountPath: /var/ossec/logs
+              subPath: fortishield/var/ossec/logs
+            - name: fortishield-manager-master
+              mountPath: /var/ossec/queue
+              subPath: fortishield/var/ossec/queue
+            - name: fortishield-manager-master
+              mountPath: /var/ossec/var/multigroups
+              subPath: fortishield/var/ossec/var/multigroups
+            - name: fortishield-manager-master
+              mountPath: /var/ossec/integrations
+              subPath: fortishield/var/ossec/integrations
+            - name: fortishield-manager-master
+              mountPath: /var/ossec/active-response/bin
+              subPath: fortishield/var/ossec/active-response/bin
+            - name: fortishield-manager-master
+              mountPath: /var/ossec/agentless
+              subPath: fortishield/var/ossec/agentless
+            - name: fortishield-manager-master
+              mountPath: /var/ossec/wodles
+              subPath: fortishield/var/ossec/wodles
+            - name: fortishield-manager-master
+              mountPath: /etc/filebeat
+              subPath: filebeat/etc/filebeat
+            - name: fortishield-manager-master
+              mountPath: /var/lib/filebeat
+              subPath: filebeat/var/lib/filebeat
+          ports:
+            - containerPort: 1515
+              name: registration
+            - containerPort: 1516
+              name: cluster
+            - containerPort: 55000
+              name: api
+          env:
+            - name: INDEXER_URL
+              value: 'https://indexer:9200'
+            - name: INDEXER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: indexer-cred
+                  key: username
+            - name: INDEXER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: indexer-cred
+                  key: password
+            - name: FILEBEAT_SSL_VERIFICATION_MODE
+              value: 'full'
+            - name: SSL_CERTIFICATE_AUTHORITIES
+              value: /etc/ssl/root-ca.pem
+            - name: SSL_CERTIFICATE
+              value: /etc/ssl/filebeat.pem
+            - name: SSL_KEY
+              value: /etc/ssl/filebeat.key
+            - name: API_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: fortishield-api-cred
+                  key: username
+            - name: API_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fortishield-api-cred
+                  key: password
+            - name: FORTISHIELD_CLUSTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: fortishield-cluster-key
+                  key: key
+  volumeClaimTemplates:
+    - metadata:
+        name: fortishield-manager-master
+        namespace: fortishield
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: fortishield-storage
+        resources:
+          requests:
+            storage: 500Mi

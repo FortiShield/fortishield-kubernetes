@@ -1,0 +1,35 @@
+# Copyright (C) 2019, Fortishield Inc.
+#
+# This program is a free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public
+# License (version 2) as published by the FSF - Free Software
+# Foundation.
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fortishield-manager-master
+  namespace: fortishield
+spec:
+  template:
+    spec:
+      containers:
+        - name: fortishield-manager
+          resources:
+            requests:
+              cpu: 1
+              memory: 1Gi
+            limits:
+              cpu: 2
+              memory: 2Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: fortishield-manager-master
+        namespace: fortishield
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: fortishield-storage
+        resources:
+          requests:
+            storage: 50Gi

@@ -1,0 +1,24 @@
+# Copyright (C) 2019, Fortishield Inc.
+#
+# This program is a free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public
+# License (version 2) as published by the FSF - Free Software
+# Foundation.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fortishield-dashboard
+  namespace: fortishield
+spec:
+  template:
+    spec:
+      containers:
+        - name: fortishield-dashboard
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 400m
+              memory: 2Gi
